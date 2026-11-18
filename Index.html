@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Fábrica - Caicedo Stone</title>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdKP7pwWqbfhQ0Xgnq_3nV_XiUNsEpywM",
+            authDomain: "caicedostone-app.firebaseapp.com",
+            projectId: "caicedostone-app",
+            storageBucket: "caicedostone-app.firebasestorage.app",
+            messagingSenderId: "449986519983",
+            appId: "1:449986519983:web:1be26043f03403434c055a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.collection = collection;
+        window.getDocs = getDocs;
+        window.setDoc = setDoc;
+        window.doc = doc;
+        window.deleteDoc = deleteDoc;
+        window.updateDoc = updateDoc;
+
+        if (window.initApp) window.initApp();
+    </script>
+
+    <style>
+        :root {
+            --primary: #1e293b;
+            --secondary: #0f172a;
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --whatsapp: #25d366;
+            --bg-overlay: rgba(15, 23, 42, 0.75);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-overlay);
+            z-index: 0;
+        }
+
+        header, .board-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-container {
+            width: 85px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-container span {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .app-title h1 {
+            font-size: 1.4rem;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .app-title p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #475569; }
+        .btn-warning { background: var(--warning); color: #0f172a; }
+        .btn-whatsapp { background: var(--whatsapp); color: white; }
+        .btn-ios-settings { background: #334155; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: background 0.2s; }
+        .btn-ios-settings:hover { background: #475569; }
+
+        .board-container {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        .column {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            width: 320px;
+            min-width: 320px;
+            max-height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .column.col-averias-header {
+            border-top: 4px solid var(--danger);
+        }
+
+        .column-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .column-title {
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-count {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .cards-list {
+            padding: 12px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 100px;
+        }
+
+        .card {
+            background: #1e293b;
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.4);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .card.alert-storage {
+            border: 2px solid var(--danger);
+            animation: pulse-border 2s infinite;
+        }
+
+        .card.card-breakdown {
+            border-left: 4px solid var(--danger);
+            background: #182234;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: var(--danger); }
+            50% { border-color: #fca5a5; }
+            100% { border-color: var(--danger); }
+        }
+
+        .card-img-preview {
+            width: 100%;
+            height: 140px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 10px;
+            background: #0f172a;
+        }
+
+        .card-material-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .tag-client { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+        .tag-process { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+        .tag-finish { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+        .tag-machine { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid #3b82f6; }
+
+        .card-dates {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+        }
+
+        .storage-warning {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .column-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .add-card-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            width: 100%;
+            text-align: left;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-card-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: #1e293b;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 25px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .close-modal { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; font-weight: 500; }
+        .form-control { width: 100%; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.15); padding: 10px 12px; border-radius: 8px; color: white; font-size: 0.95rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 15px; }
+        input[type="file"] { display: none; }
+        
+        .trello-section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #93c5fd;
+            margin: 15px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .trello-activity-box {
+            background: #0f172a;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .activity-item {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 6px;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .ios-settings-group {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .ios-list-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+        }
+        .ios-list-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="logo-container" id="logoDisplay">
+                <span>LOGO</span>
+            </div>
+            <div class="app-title">
+                <h1>Control de Producción - Fábrica</h1>
+                <p>Caicedo Stone, S.L. - Usuario: <strong id="currentUserDisplay" style="color: #34d399;">Cargando...</strong></p>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-ios-settings" id="btnOpenIosSettings" title="Ajustes y Miembros">⚙️</button>
+            <button class="btn btn-secondary" id="btnConfigLogo">🖼️ Logo</button>
+            <button class="btn btn-secondary" id="btnBg">🎨 Fondo</button>
+            <button class="btn" id="btnAddColumn">➕ Columna</button>
+            <input type="file" id="bgInput" accept="image/*">
+        </div>
+    </header>
+
+    <div class="board-container" id="boardContainer"></div>
+
+    <!-- Modal de Ajustes y Miembros (Estilo iOS con Permisos) -->
+    <div class="modal" id="iosSettingsModal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h2>⚙️ Ajustes de Administrador y Miembros</h2>
+                <button class="close-modal" id="closeIosSettingsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Mi usuario actual en este dispositivo:</label>
+                    <input type="text" id="changeMyNameInput" class="form-control" placeholder="Tu nombre">
+                    <button class="btn btn-secondary" style="margin-top: 8px; width:100%; justify-content: center;" onclick="updateMyName()">Actualizar mi nombre</button>
+                </div>
+
+                <div class="trello-section-title">👥 Gestión de Miembros y Permisos (Panel Administrador)</div>
+                <div class="ios-settings-group" id="membersListContainer"></div>
+
+                <div class="trello-section-title">📲 Compartir Acceso con Nuevos Miembros</div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-whatsapp" style="flex:1; justify-content:center;" id="btnShareWhatsApp">💬 Compartir por WhatsApp</button>
+                    <button class="btn btn-accent" style="flex:1; justify-content:center;" id="btnShareEmail">✉️ Enviar por Email</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btnCloseIosSettings">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para configurar el Logo -->
+    <div class="modal" id="logoModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Subir Logotipo</h2>
+                <button class="close-modal" id="closeLogoModal">&times;</button>
+            </div>
+            <div class="form-group" style="text-align: center;">
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">Selecciona la imagen de tu logotipo para aplicarla en la web y en los informes impresos.</p>
+                <input type="file" id="logoFileInput" accept="image/*">
+                <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="document.getElementById('logoFileInput').click()">📁 Seleccionar Imagen de Logo</button>
+                <div id="logoFileName" style="font-size: 0.85rem; color: #34d399; margin-top: 10px; font-weight: bold;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btnCloseLogoModal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tarjetas de Material (Estilo Trello) -->
+    <div class="modal" id="cardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Tarjeta de Material</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div id="modalBody">
+                <div class="form-group">
+                    <label>Descripción del Material (Nombre y nº de tablas):</label>
+                    <input type="text" id="matDescription" class="form-control" placeholder="Ej: Blanco Macael 73tx 2cm (15 tablas)">
+                </div>
+                <div class="form-group">
+                    <label>Cliente (Etiqueta Verde - 1ª Prioridad):</label>
+                    <input type="text" id="tagClient" class="form-control" placeholder="Ej: Cosentino, Tino...">
+                </div>
+                <div class="form-group">
+                    <label>Proceso (Etiqueta Amarilla - 2ª Prioridad):</label>
+                    <input type="text" id="tagProcess" class="form-control" placeholder="Ej: Resinado, Corte...">
+                </div>
+                <div class="form-group">
+                    <label>Acabado (Etiqueta Roja - 3ª Prioridad):</label>
+                    <input type="text" id="tagFinish" class="form-control" placeholder="Ej: Apomazado, Pulido...">
+                </div>
+                <div class="form-group">
+                    <label>Notas / Instrucciones especiales:</label>
+                    <textarea id="cardNotes" class="form-control" rows="2" placeholder="Instrucciones especiales, roturas de bloque..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Fechas Clave:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div><small>Aserrado:</small><input type="date" id="dateSaw" class="form-control"></div>
+                        <div><small>Entrada:</small><input type="date" id="dateEntry" class="form-control"></div>
+                        <div><small>Resinado:</small><input type="date" id="dateResin" class="form-control"></div>
+                        <div><small>Pulido:</small><input type="date" id="datePolish" class="form-control"></div>
+                        <div><small>Corte:</small><input type="date" id="dateCut" class="form-control"></div>
+                        <div><small>Carga:</small><input type="date" id="dateLoad" class="form-control"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Foto de la Tabla (Bloque, defecto, estado actual):</label>
+                    <input type="file" id="cardImageInput" accept="image/*" capture="environment">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('cardImageInput').click()">📸 Tomar Foto o Subir</button>
+                        <button class="btn btn-danger" style="display: none;" id="btnRemoveCardImage" onclick="removeCardImage()">🗑️ Quitar Foto</button>
+                    </div>
+                    <div id="imgPreviewName" style="font-size: 0.8rem; color: #10b981; margin-top: 5px;"></div>
+                </div>
+
+                <div id="trelloActivitySection" style="display:none;">
+                    <div class="trello-section-title">💬 Comentarios y Actividad</div>
+                    <div class="trello-activity-box" id="trelloActivityList"></div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <input type="text" id="newCommentInput" class="form-control" placeholder="Escribe un comentario o apunte y pulsa Guardar...">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="btnDeleteCard" style="display:none;">Eliminar</button>
+                <button class="btn btn-secondary" id="btnCloseModal">Cancelar</button>
+                <button class="btn btn-success" id="btnSaveCard">Guardar en la Nube</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tarjetas de AVERIAS -->
+    <div class="modal" id="breakdownModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="breakdownModalTitle">Registro de Avería / Incidencia</h2>
+                <button class="close-modal" id="closeBreakdownModal">&times;</button>
+            </div>
+            <div id="breakdownModalBody">
+                <div class="form-group">
+                    <label>Seleccionar Máquina / Elemento:</label>
+                    <select id="breakdownMachine" class="form-control">
+                        <option value="" disabled selected>SELECCIONAR ELEMENTO...</option>
+                        <option value="Telar">Telar</option>
+                        <option value="Hilo">Hilo</option>
+                        <option value="Maquina de corte 1">Maquina de corte 1</option>
+                        <option value="Maquina de corte 2">Maquina de corte 2</option>
+                        <option value="Horno de Resinado">Horno de Resinado</option>
+                        <option value="Flameadora">Flameadora</option>
+                        <option value="Calibradora">Calibradora</option>
+                        <option value="Pulidora 1">Pulidora 1</option>
+                        <option value="Pulidora 2">Pulidora 2</option>
+                        <option value="Linea 1">Linea 1</option>
+                        <option value="Linea 2">Linea 2</option>
+                        <option value="Grua 25T">Grua 25T</option>
+                        <option value="Grua 2.5T">Grua 2.5T</option>
+                        <option value="Grua Jaso">Grua Jaso</option>
+                        <option value="Grua GH">Grua GH</option>
+                        <option value="Decantadora">Decantadora</option>
+                        <option value="Motor Decantadora">Motor Decantadora</option>
+                        <option value="Dosificadora Polvos">Dosificadora Polvos</option>
+                        <option value="Bombo polvos">Bombo polvos</option>
+                        <option value="Bombo barro">Bombo barro</option>
+                        <option value="Filtro prensa">Filtro prensa</option>
+                        <option value="Agitador Balsa">Agitador Balsa</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de avería:</label>
+                    <input type="text" id="breakdownType" class="form-control" placeholder="Ej: Rotura de correa, fallo hidráulico...">
+                </div>
+                <div class="form-group">
+                    <label>Fechas:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div><small>Fecha de avería:</small><input type="date" id="breakdownDate" class="form-control"></div>
+                        <div><small>Fecha de reparación:</small><input type="date" id="breakdownRepairDate" class="form-control"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Empresa que ha realizado la reparación:</label>
+                    <input type="text" id="breakdownCompany" class="form-control" placeholder="Ej: Talleres Mecánicos Caicedo / Servicio Técnico...">
+                </div>
+                <div class="form-group">
+                    <label>Nº de operarios que han venido:</label>
+                    <input type="text" id="breakdownWorkers" class="form-control" placeholder="Ej: 2 operarios">
+                </div>
+                <div class="form-group">
+                    <label>Adjuntar Foto (Pieza o zona averiada):</label>
+                    <input type="file" id="breakdownImageInput" accept="image/*" capture="environment">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('breakdownImageInput').click()">📸 Tomar Foto o Subir</button>
+                        <button class="btn btn-danger" style="display: none;" id="btnRemoveBreakdownImage" onclick="removeBreakdownImage()">🗑️ Quitar Foto</button>
+                    </div>
+                    <div id="breakdownImgPreviewName" style="font-size: 0.8rem; color: #10b981; margin-top: 5px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="btnDeleteBreakdown" style="display:none;">Eliminar</button>
+                <button class="btn btn-secondary" id="btnCloseBreakdownModal">Cancelar</button>
+                <button class="btn btn-success" id="btnSaveBreakdown">Guardar Avería</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let appData = {
+            logo: '',
+            background: '',
+            members: {
+                'Administrador (Tú)': 'escritura_edicion',
+                'Ramon Jesus': 'escritura_edicion',
+                'Sergio': 'escritura',
+                'Antonio': 'lectura'
+            },
+            columns: [
+                { id: 'col_1', title: 'Entrada en fábrica', cards: [] },
+                { id: 'col_resinado', title: 'LINEA DE RESINADO Y PLANIFICACION DIARIA', cards: [] },
+                { id: 'col_3', title: 'Línea de pulido', cards: [] },
+                { id: 'col_4', title: 'Material terminado y en fábrica', cards: [] },
+                { id: 'col_5', title: 'Material cargado', cards: [] },
+                { id: 'col_averias', title: 'AVERIAS', cards: [] }
+            ]
+        };
+
+        let currentEditingCardId = null;
+        let currentTargetColId = null;
+        let tempCardImage = '';
+        let tempBreakdownImage = '';
+        let currentUsername = 'Administrador (Tú)';
+
+        window.initApp = async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userParam = urlParams.get('user');
+            
+            await loadFromCloud();
+
+            if (userParam) {
+                currentUsername = decodeURIComponent(userParam);
+                localStorage.setItem('caicedo_username', currentUsername);
+            } else {
+                const savedUser = localStorage.getItem('caicedo_username');
+                if (savedUser) {
+                    currentUsername = savedUser;
+                } else {
+                    let namePrompt = prompt("Introduce tu nombre o cómo apareces en la agenda para identificarte en la fábrica:", "Operario Caicedo");
+                    if (namePrompt) {
+                        currentUsername = namePrompt;
+                        localStorage.setItem('caicedo_username', currentUsername);
+                    }
+                }
+            }
+
+            if (!appData.members || typeof appData.members !== 'object') {
+                appData.members = { 'Administrador (Tú)': 'escritura_edicion' };
+            }
+            if (!appData.members[currentUsername]) {
+                appData.members[currentUsername] = 'escritura';
+                saveToCloudSilently();
+            }
+
+            document.getElementById('currentUserDisplay').innerText = currentUsername;
+            document.getElementById('changeMyNameInput').value = currentUsername;
+
+            checkUserPermissions();
+            applyAutomations();
+            render();
+        }
+
+        function checkUserPermissions() {
+            let role = appData.members[currentUsername] || 'lectura';
+            // Si el usuario es el Administrador principal, aseguramos que tenga permisos totales
+            if (currentUsername.toLowerCase().includes('admin')) {
+                appData.members[currentUsername] = 'escritura_edicion';
+            }
+        }
+
+        function canUserEdit() {
+            let role = appData.members[currentUsername] || 'lectura';
+            return role === 'escritura' || role === 'escritura_edicion';
+        }
+
+        document.getElementById('btnOpenIosSettings').addEventListener('click', () => {
+            renderMembersList();
+            document.getElementById('iosSettingsModal').classList.add('active');
+        });
+        document.getElementById('closeIosSettingsModal').addEventListener('click', () => {
+            document.getElementById('iosSettingsModal').classList.remove('active');
+        });
+        document.getElementById('btnCloseIosSettings').addEventListener('click', () => {
+            document.getElementById('iosSettingsModal').classList.remove('active');
+        });
+
+        window.updateMyName = function() {
+            const newName = document.getElementById('changeMyNameInput').value.trim();
+            if (!newName) return;
+            const oldName = currentUsername;
+            currentUsername = newName;
+            localStorage.setItem('caicedo_username', currentUsername);
+            document.getElementById('currentUserDisplay').innerText = currentUsername;
+            
+            if (!appData.members[currentUsername]) {
+                appData.members[currentUsername] = appData.members[oldName] || 'escritura';
+                if (oldName !== currentUsername && appData.members[oldName]) {
+                    delete appData.members[oldName];
+                }
+                saveToCloud();
+            }
+            alert("¡Nombre de usuario actualizado con éxito!");
+            document.getElementById('iosSettingsModal').classList.remove('active');
+            render();
+        };
+
+        window.updateMemberRole = function(memberName, newRole) {
+            if (appData.members[memberName]) {
+                appData.members[memberName] = newRole;
+                saveToCloudSilently();
+            }
+        };
+
+        window.deleteMember = function(memberName) {
+            if (confirm(`¿Seguro que deseas eliminar el acceso a ${memberName}?`)) {
+                delete appData.members[memberName];
+                saveToCloud();
+                renderMembersList();
+            }
+        };
+
+        function renderMembersList() {
+            const container = document.getElementById('membersListContainer');
+            const membersKeys = Object.keys(appData.members || {});
+            if (membersKeys.length === 0) {
+                container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem;">No hay miembros registrados aún.</div>';
+                return;
+            }
+
+            container.innerHTML = membersKeys.map(member => `
+                <div class="ios-list-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold; color: #f8fafc;">👤 ${member} ${member === currentUsername ? '(Tú)' : ''}</span>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.7rem;" onclick="deleteMember('${member}')">🗑️ Eliminar</button>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                        <span style="font-size: 0.8rem; color: #94a3b8;">Permisos:</span>
+                        <select class="form-control" style="width: 60%; font-size: 0.8rem; padding: 6px;" onchange="updateMemberRole('${member}', this.value)">
+                            <option value="lectura" ${appData.members[member] === 'lectura' ? 'selected' : ''}>👁️ Sólo lectura</option>
+                            <option value="escritura" ${appData.members[member] === 'escritura' ? 'selected' : ''}>✍️ Escritura</option>
+                            <option value="escritura_edicion" ${appData.members[member] === 'escritura_edicion' ? 'selected' : ''}>🛠️ Escritura y Edición</option>
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getShareLink(contactName) {
+            let cleanUrl = window.location.href.split('?')[0];
+            return `${cleanUrl}?user=${encodeURIComponent(contactName)}`;
+        }
+
+        document.getElementById('btnShareWhatsApp').addEventListener('click', () => {
+            let contactName = prompt("¿A qué nombre de tu agenda vas a enviar la app? (Ej: Ramon Jesus):", "Ramon Jesus");
+            if (!contactName) return;
+
+            if (!appData.members[contactName]) {
+                appData.members[contactName] = 'escritura'; // Permiso por defecto al invitar
+                saveToCloudSilently();
+            }
+
+            let inviteUrl = getShareLink(contactName);
+            let message = `Hola ${contactName}, aquí tienes acceso directo al control de producción de Caicedo Stone. Pincha en el enlace para entrar con tu nombre: ${inviteUrl}`;
+            let whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        });
+
+        document.getElementById('btnShareEmail').addEventListener('click', () => {
+            let contactName = prompt("¿Qué nombre de miembro o correo deseas registrar?:", "Operario");
+            if (!contactName) return;
+
+            if (!appData.members[contactName]) {
+                appData.members[contactName] = 'escritura';
+                saveToCloudSilently();
+            }
+
+            let inviteUrl = getShareLink(contactName);
+            let subject = encodeURIComponent("Acceso Control de Producción - Caicedo Stone");
+            let body = encodeURIComponent(`Hola ${contactName},\n\nAquí tienes el enlace de acceso directo al sistema de producción de Caicedo Stone:\n${inviteUrl}\n\nUn saludo.`);
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+        });
+
+        function formatTimestamp() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `${dateStr} a las ${timeStr}`;
+        }
+
+        function applyAutomations() {
+            const today = new Date();
+            let dataChanged = false;
+
+            appData.columns.forEach(col => {
+                if (col.cards && Array.isArray(col.cards)) {
+                    if (col.id === 'col_5' || col.title.toLowerCase().includes('cargado')) {
+                        const initialLength = col.cards.length;
+                        col.cards = col.cards.filter(card => {
+                            if (!card.dates || !card.dates.load) return true;
+                            const loadDate = new Date(card.dates.load);
+                            const diffTime = today - loadDate;
+                            const daysSinceLoad = diffTime / (1000 * 60 * 60 * 24);
+                            return daysSinceLoad <= 30;
+                        });
+                        if (col.cards.length !== initialLength) dataChanged = true;
+                    }
+                }
+            });
+
+            if (dataChanged) {
+                saveToCloudSilently();
+            }
+        }
+
+        async function loadFromCloud() {
+            try {
+                const querySnapshot = await window.getDocs(window.collection(window.db, "configuracion"));
+                querySnapshot.forEach((docSnap) => {
+                    if (docSnap.id === "estado_fabrica") {
+                        const data = docSnap.data();
+                        appData = {
+                            logo: data.logo || '',
+                            background: data.background || '',
+                            members: data.members || { 'Administrador (Tú)': 'escritura_edicion' },
+                            columns: (data.columns && Array.isArray(data.columns)) ? data.columns : appData.columns
+                        };
+                        if (Array.isArray(appData.members)) {
+                            let converted = {};
+                            appData.members.forEach(m => converted[m] = 'escritura_edicion');
+                            appData.members = converted;
+                        }
+                        if (!appData.columns.some(c => c.title.toUpperCase().includes('RESINADO'))) {
+                            const entryIndex = appData.columns.findIndex(c => c.id === 'col_1' || c.title.toLowerCase().includes('entrada'));
+                            const newCol = { id: 'col_resinado', title: 'LINEA DE RESINADO Y PLANIFICACION DIARIA', cards: [] };
+                            if (entryIndex !== -1) {
+                                appData.columns.splice(entryIndex + 1, 0, newCol);
+                            } else {
+                                appData.columns.push(newCol);
+                            }
+                        }
+                        if (!appData.columns.some(c => c.title.toUpperCase() === 'AVERIAS')) {
+                            appData.columns.push({ id: 'col_averias', title: 'AVERIAS', cards: [] });
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Error al cargar de la nube:", e);
+            }
+        }
+
+        async function saveToCloud() {
+            try {
+                await window.setDoc(window.doc(window.db, "configuracion", "estado_fabrica"), appData);
+            } catch (e) {
+                console.error("Error al guardar en la nube:", e);
+                alert("Error al guardar en la nube. Revisa las reglas de Firestore.");
+            }
+            render();
+        }
+
+        async function saveToCloudSilently() {
+            try {
+                await window.setDoc(window.doc(window.db, "configuracion", "estado_fabrica"), appData);
+            } catch (e) {
+                console.error("Error al sincronizar automáticos:", e);
+            }
+        }
+
+        function render() {
+            if (!appData.columns || !Array.isArray(appData.columns)) {
+                appData.columns = [
+                    { id: 'col_1', title: 'Entrada en fábrica', cards: [] },
+                    { id: 'col_resinado', title: 'LINEA DE RESINADO Y PLANIFICACION DIARIA', cards: [] },
+                    { id: 'col_3', title: 'Línea de pulido', cards: [] },
+                    { id: 'col_4', title: 'Material terminado y en fábrica', cards: [] },
+                    { id: 'col_5', title: 'Material cargado', cards: [] },
+                    { id: 'col_averias', title: 'AVERIAS', cards: [] }
+                ];
+            }
+
+            const logoContainer = document.getElementById('logoDisplay');
+            if (appData.logo) {
+                logoContainer.innerHTML = `<img src="${appData.logo}" alt="Logo Empresa">`;
+            } else {
+                logoContainer.innerHTML = `<span>LOGO</span>`;
+            }
+
+            if (appData.background) {
+                document.body.style.backgroundImage = `url('${appData.background}')`;
+            }
+
+            const container = document.getElementById('boardContainer');
+            container.innerHTML = '';
+
+            let userCanEdit = canUserEdit();
+
+            appData.columns.forEach(col => {
+                const isAveriasCol = (col.title.toUpperCase() === 'AVERIAS' || col.id === 'col_averias');
+                const colDiv = document.createElement('div');
+                colDiv.className = `column ${isAveriasCol ? 'col-averias-header' : ''}`;
+                
+                let cardsHtml = '';
+                if (col.cards && Array.isArray(col.cards)) {
+                    col.cards.forEach(card => {
+                        if (isAveriasCol) {
+                            let isRepaired = Boolean(card.breakdownRepairDate);
+                            cardsHtml += `
+                                <div class="card card-breakdown" onclick="openEditBreakdownModal('${col.id}', '${card.id}')">
+                                    ${card.image ? `<img src="${card.image}" class="card-img-preview">` : ''}
+                                    <div class="card-material-title">⚙️ ${card.machine || 'Sin máquina'}</div>
+                                    <div class="card-tags">
+                                        <span class="tag tag-machine">🛠️ ${card.breakdownType || 'Avería genérica'}</span>
+                                        <span class="tag" style="background:${isRepaired ? 'rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;' : 'rgba(239,68,68,0.2); color:#f87171; border:1px solid #ef4444;'}">
+                                            ${isRepaired ? '✅ Reparada' : '⚠️ Pendiente'}
+                                        </span>
+                                    </div>
+                                    <div class="card-dates" style="grid-template-columns: 1fr 1fr;">
+                                        <div>Avería: ${card.breakdownDate || '-'}</div>
+                                        <div>Reparación: ${card.breakdownRepairDate || 'En curso'}</div>
+                                    </div>
+                                    <div style="margin-top: 10px;" onclick="event.stopPropagation()">
+                                        <button class="btn btn-warning" style="font-size: 0.8rem; padding: 8px; width: 100%; justify-content: center;" onclick="generateBreakdownReport('${card.id}')">🖨️ Informe de Avería</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            let isExpiredStorage = false;
+                            let daysInStock = 0;
+
+                            if (col.id === 'col_4' && card.dates && card.dates.polish) {
+                                const polishDate = new Date(card.dates.polish);
+                                const today = new Date();
+                                const diffTime = today - polishDate;
+                                daysInStock = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                if (daysInStock > 30) isExpiredStorage = true;
+                            }
+
+                            let isLoadedCol = (col.id === 'col_5' || col.title.toLowerCase().includes('cargado'));
+
+                            let optionsHtml = `<option value="" disabled selected>MOVER A...</option>`;
+                            appData.columns.forEach(targetCol => {
+                                if (targetCol.id !== col.id) {
+                                    optionsHtml += `<option value="${targetCol.id}">${targetCol.title}</option>`;
+                                }
+                            });
+
+                            let lastActivity = '';
+                            if (card.activity && card.activity.length > 0) {
+                                lastActivity = `<div style="font-size:0.7rem; color:#93c5fd; margin-top:6px; font-style:italic;">💬 ${card.activity[card.activity.length - 1]}</div>`;
+                            }
+
+                            cardsHtml += `
+                                <div class="card ${isExpiredStorage ? 'alert-storage' : ''}" onclick="openEditCardModal('${col.id}', '${card.id}')">
+                                    ${card.image ? `<img src="${card.image}" class="card-img-preview">` : ''}
+                                    <div class="card-material-title">${card.description || 'Sin descripción'}</div>
+                                    <div class="card-tags">
+                                        ${card.tagClient ? `<span class="tag tag-client">👤 ${card.tagClient}</span>` : ''}
+                                        ${card.tagProcess ? `<span class="tag tag-process">⚙️ ${card.tagProcess}</span>` : ''}
+                                        ${card.tagFinish ? `<span class="tag tag-finish">✨ ${card.tagFinish}</span>` : ''}
+                                    </div>
+                                    ${card.notes ? `<div style="font-size:0.8rem; color:#94a3b8; margin-bottom:8px;">📝 ${card.notes}</div>` : ''}
+                                    <div class="card-dates">
+                                        <div>Aserr: ${card.dates?.saw || '-'}</div>
+                                        <div>Ent: ${card.dates?.entry || '-'}</div>
+                                        <div>Res: ${card.dates?.resin || '-'}</div>
+                                        <div>Pul: ${card.dates?.polish || '-'}</div>
+                                        <div>Corte: ${card.dates?.cut || '-'}</div>
+                                        <div>Carga: ${card.dates?.load || '-'}</div>
+                                    </div>
+                                    ${lastActivity}
+                                    ${isExpiredStorage ? `<div class="storage-warning">⚠️ ${daysInStock} días (>1 mes). ¡Cobrar extra!</div>` : ''}
+                                    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;" onclick="event.stopPropagation()">
+                                        ${userCanEdit ? `
+                                            <select class="form-control" style="font-size: 0.8rem; padding: 6px; width: 100%; background: #0f172a; color: #cbd5e1; cursor: pointer;" onchange="moveCardToColumn('${col.id}', '${card.id}', this.value)">
+                                                ${optionsHtml}
+                                            </select>
+                                        ` : ''}
+                                        ${isLoadedCol ? `<button class="btn btn-success" style="font-size: 0.8rem; padding: 8px; width: 100%; justify-content: center;" onclick="generateReport('${card.id}')">🖨️ Informe de Trazabilidad</button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+
+                colDiv.innerHTML = `
+                    <div class="column-header">
+                        <div class="column-title">${col.title} <span class="badge-count">${col.cards ? col.cards.length : 0}</span></div>
+                        ${appData.columns.length > 1 && !isAveriasCol && userCanEdit ? `<button class="btn btn-danger" style="padding: 2px 6px; font-size:0.7rem;" onclick="deleteColumn('${col.id}')">✕</button>` : ''}
+                    </div>
+                    <div class="cards-list">${cardsHtml}</div>
+                    <div class="column-footer">
+                        ${userCanEdit ? `<button class="add-card-btn" onclick="openAddCardModal('${col.id}')">＋ Añadir ${isAveriasCol ? 'Avería' : 'tarjeta'}</button>` : '<div style="font-size:0.75rem; color:#64748b; text-align:center;">Modo lectura</div>'}
+                    </div>
+                `;
+                container.appendChild(colDiv);
+            });
+        }
+
+        window.moveCardToColumn = function(sourceColId, cardId, targetColId) {
+            if (!canUserEdit()) {
+                alert("No tienes permisos de edición para mover tarjetas.");
+                return;
+            }
+            if (!targetColId) return;
+            const sourceCol = appData.columns.find(c => c.id === sourceColId);
+            const targetCol = appData.columns.find(c => c.id === targetColId);
+            if (!sourceCol || !targetCol) return;
+
+            const cardIndex = sourceCol.cards.findIndex(ca => ca.id === cardId);
+            if (cardIndex === -1) return;
+
+            const card = sourceCol.cards.splice(cardIndex, 1)[0];
+            
+            if (!card.activity) card.activity = [];
+            card.activity.push(`${currentUsername} ha movido esta tarjeta a ${targetCol.title} el ${formatTimestamp()}`);
+
+            targetCol.cards.push(card);
+            saveToCloud();
+        };
+
+        document.getElementById('btnConfigLogo').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            document.getElementById('logoModal').classList.add('active');
+        });
+        document.getElementById('closeLogoModal').addEventListener('click', () => {
+            document.getElementById('logoModal').classList.remove('active');
+        });
+        document.getElementById('btnCloseLogoModal').addEventListener('click', () => {
+            document.getElementById('logoModal').classList.remove('active');
+        });
+
+        document.getElementById('logoFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 300;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        appData.logo = canvas.toDataURL('image/jpeg', 0.85);
+                        
+                        document.getElementById('logoFileName').innerText = '¡Logotipo cargado y guardado con éxito!';
+                        saveToCloud();
+                        setTimeout(() => {
+                            document.getElementById('logoModal').classList.remove('active');
+                            document.getElementById('logoFileName').innerText = '';
+                        }, 1200);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('cardImageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 800;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        tempCardImage = canvas.toDataURL('image/jpeg', 0.8);
+                        document.getElementById('imgPreviewName').innerText = '📸 Foto optimizada y lista';
+                        document.getElementById('btnRemoveCardImage').style.display = 'inline-block';
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        window.removeCardImage = function() {
+            tempCardImage = '';
+            document.getElementById('imgPreviewName').innerText = '🗑️ Foto eliminada (guarda para aplicar)';
+            document.getElementById('btnRemoveCardImage').style.display = 'none';
+            document.getElementById('cardImageInput').value = '';
+        }
+
+        document.getElementById('breakdownImageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 800;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        tempBreakdownImage = canvas.toDataURL('image/jpeg', 0.8);
+                        document.getElementById('breakdownImgPreviewName').innerText = '📸 Foto de avería optimizada';
+                        document.getElementById('btnRemoveBreakdownImage').style.display = 'inline-block';
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        window.removeBreakdownImage = function() {
+            tempBreakdownImage = '';
+            document.getElementById('breakdownImgPreviewName').innerText = '🗑️ Foto eliminada';
+            document.getElementById('btnRemoveBreakdownImage').style.display = 'none';
+            document.getElementById('breakdownImageInput').value = '';
+        }
+
+        window.generateReport = function(cardId) {
+            let foundCard = null;
+            appData.columns.forEach(col => {
+                const c = col.cards.find(item => item.id === cardId);
+                if (c) foundCard = c;
+            });
+
+            if (!foundCard) return;
+
+            let activityHtml = '';
+            if (foundCard.activity && foundCard.activity.length > 0) {
+                activityHtml = foundCard.activity.map(act => `<div style="margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">• ${act}</div>`).join('');
+            } else {
+                activityHtml = '<div style="color: #64748b; font-style: italic;">Sin registros de actividad previos.</div>';
+            }
+
+            const reportWindow = window.open('', '_blank');
+            reportWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Informe de Trazabilidad - ${foundCard.description || 'Material'}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 30px; color: #111; max-width: 800px; margin: auto; }
+                        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px; }
+                        .report-logo { width: 140px; height: 50px; object-fit: contain; }
+                        h1 { color: #0f172a; font-size: 20px; margin: 0; }
+                        .info-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 15px; }
+                        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+                        .label { font-weight: bold; color: #475569; }
+                        .value { color: #1e293b; }
+                        img.card-photo { max-width: 100%; height: 300px; object-fit: cover; border-radius: 8px; margin-top: 15px; border: 1px solid #cbd5e1; }
+                        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 10px; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="report-header">
+                        <div>
+                            <h1>📋 Informe de Trazabilidad</h1>
+                            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Control de Producción - Caicedo Stone, S.L.</p>
+                        </div>
+                        <div>
+                            ${appData.logo ? `<img src="${appData.logo}" class="report-logo">` : '<div style="font-weight:bold; color:#1e293b;">CAICEDO STONE</div>'}
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-row"><span class="label">Descripción del Material:</span> <span class="value">${foundCard.description || '-'}</span></div>
+                        <div class="info-row"><span class="label">Cliente:</span> <span class="value">${foundCard.tagClient || '-'}</span></div>
+                        <div class="info-row"><span class="label">Proceso:</span> <span class="value">${foundCard.tagProcess || '-'}</span></div>
+                        <div class="info-row"><span class="label">Acabado:</span> <span class="value">${foundCard.tagFinish || '-'}</span></div>
+                        <div class="info-row"><span class="label">Notas / Apuntes / Incidencias:</span> <span class="value">${foundCard.notes || 'Ninguna'}</span></div>
+                    </div>
+
+                    <h3 style="margin-top: 25px; font-size: 16px; color: #1e293b;">📅 Historial de Fechas Clave:</h3>
+                    <div class="info-box">
+                        <div class="info-row"><span class="label">Fecha de Aserrado:</span> <span class="value">${foundCard.dates?.saw || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Entrada en Fábrica:</span> <span class="value">${foundCard.dates?.entry || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Resinado:</span> <span class="value">${foundCard.dates?.resin || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Pulido:</span> <span class="value">${foundCard.dates?.polish || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Corte:</span> <span class="value">${foundCard.dates?.cut || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Carga:</span> <span class="value">${foundCard.dates?.load || '-'}</span></div>
+                    </div>
+
+                    <h3 style="margin-top: 25px; font-size: 16px; color: #1e293b;">📝 Historial de Actividad y Seguimiento (Miembros):</h3>
+                    <div class="info-box" style="font-size: 13px; color: #334155;">
+                        ${activityHtml}
+                    </div>
+
+                    ${foundCard.image ? `<div><h3 style="margin-top: 25px; font-size: 16px; color: #1e293b;">📸 Fotografía Registrada (Bloque / Estado / Incidencia):</h3><img src="${foundCard.image}" class="card-photo"></div>` : '<p style="margin-top:20px; color:#64748b; font-style:italic;">Sin fotografía adjunta en esta tarjeta.</p>'}
+
+                    <div style="margin-top: 30px; text-align: center; display: flex; gap: 15px; justify-content: center;" class="no-print">
+                        <button onclick="window.print()" style="background: #3b82f6; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">🖨️ Guardar PDF en PC / Imprimir</button>
+                    </div>
+
+                    <div class="footer">
+                        <p>Caicedo Stone, S.L. - Documento generado automáticamente para trazabilidad y control de calidad.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            reportWindow.document.close();
+        }
+
+        window.generateBreakdownReport = function(cardId) {
+            let foundCard = null;
+            appData.columns.forEach(col => {
+                const c = col.cards.find(item => item.id === cardId);
+                if (c) foundCard = c;
+            });
+
+            if (!foundCard) return;
+
+            const reportWindow = window.open('', '_blank');
+            reportWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Informe de Avería - ${foundCard.machine || 'Máquina'}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 30px; color: #111; max-width: 800px; margin: auto; }
+                        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ef4444; padding-bottom: 15px; margin-bottom: 20px; }
+                        .report-logo { width: 140px; height: 50px; object-fit: contain; }
+                        h1 { color: #0f172a; font-size: 20px; margin: 0; }
+                        .info-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 15px; }
+                        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+                        .label { font-weight: bold; color: #475569; }
+                        .value { color: #1e293b; }
+                        img.breakdown-photo { max-width: 100%; height: 320px; object-fit: cover; border-radius: 8px; margin-top: 15px; border: 1px solid #cbd5e1; }
+                        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 10px; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="report-header">
+                        <div>
+                            <h1>⚠️ Informe de Avería / Incidencia</h1>
+                            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Mantenimiento - Caicedo Stone, S.L.</p>
+                        </div>
+                        <div>
+                            ${appData.logo ? `<img src="${appData.logo}" class="report-logo">` : '<div style="font-weight:bold; color:#1e293b;">CAICEDO STONE</div>'}
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-row"><span class="label">Elemento / Máquina:</span> <span class="value">${foundCard.machine || '-'}</span></div>
+                        <div class="info-row"><span class="label">Tipo de Avería:</span> <span class="value">${foundCard.breakdownType || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Avería:</span> <span class="value">${foundCard.breakdownDate || '-'}</span></div>
+                        <div class="info-row"><span class="label">Fecha de Reparación:</span> <span class="value">${foundCard.breakdownRepairDate || 'Pendiente / En curso'}</span></div>
+                        <div class="info-row"><span class="label">Empresa Reparadora:</span> <span class="value">${foundCard.breakdownCompany || '-'}</span></div>
+                        <div class="info-row"><span class="label">Operarios en la Reparación:</span> <span class="value">${foundCard.breakdownWorkers || '-'}</span></div>
+                    </div>
+
+                    ${foundCard.image ? `<div><h3 style="margin-top: 25px; font-size: 16px; color: #1e293b;">📸 Fotografía de la Pieza o Zona Averiada:</h3><img src="${foundCard.image}" class="breakdown-photo"></div>` : '<p style="margin-top:20px; color:#64748b; font-style:italic;">Sin fotografía adjunta.</p>'}
+
+                    <div style="margin-top: 30px; text-align: center;" class="no-print">
+                        <button onclick="window.print()" style="background: #ef4444; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">🖨️ Guardar PDF en PC / Imprimir</button>
+                    </div>
+
+                    <div class="footer">
+                        <p>Caicedo Stone, S.L. - Registro de mantenimiento correctivo y preventivo.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            reportWindow.document.close();
+        }
+
+        document.getElementById('btnBg').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            document.getElementById('bgInput').click();
+        });
+        document.getElementById('bgInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => { appData.background = event.target.result; saveToCloud(); };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('btnAddColumn').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos de administrador para añadir columnas."); return; }
+            const title = prompt("Nombre de la nueva columna:");
+            if (title) {
+                appData.columns.push({ id: 'col_' + Date.now(), title, cards: [] });
+                saveToCloud();
+            }
+        });
+
+        window.deleteColumn = function(colId) {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            if (confirm("¿Eliminar columna?")) {
+                appData.columns = appData.columns.filter(c => c.id !== colId);
+                saveToCloud();
+            }
+        }
+
+        window.openAddCardModal = function(colId) {
+            if (!canUserEdit()) { alert("No tienes permisos para añadir tarjetas."); return; }
+            const col = appData.columns.find(c => c.id === colId);
+            if (col && (col.title.toUpperCase() === 'AVERIAS' || col.id === 'col_averias')) {
+                openAddBreakdownModal(colId);
+                return;
+            }
+
+            currentTargetColId = colId;
+            currentEditingCardId = null;
+            tempCardImage = '';
+            document.getElementById('modalTitle').innerText = "Nueva Tarjeta de Material";
+            document.getElementById('matDescription').value = '';
+            document.getElementById('tagClient').value = '';
+            document.getElementById('tagProcess').value = '';
+            document.getElementById('tagFinish').value = '';
+            document.getElementById('cardNotes').value = '';
+            document.getElementById('dateSaw').value = '';
+            document.getElementById('dateEntry').value = '';
+            document.getElementById('dateResin').value = '';
+            document.getElementById('datePolish').value = '';
+            document.getElementById('dateCut').value = '';
+            document.getElementById('dateLoad').value = '';
+            document.getElementById('imgPreviewName').innerText = '';
+            document.getElementById('btnRemoveCardImage').style.display = 'none';
+            document.getElementById('btnDeleteCard').style.display = 'none';
+            
+            document.getElementById('trelloActivitySection').style.display = 'none';
+            document.getElementById('newCommentInput').value = '';
+            
+            document.getElementById('cardModal').classList.add('active');
+        }
+
+        window.openEditCardModal = function(colId, cardId) {
+            currentTargetColId = colId;
+            currentEditingCardId = cardId;
+            const col = appData.columns.find(c => c.id === colId);
+            const card = col.cards.find(ca => ca.id === cardId);
+
+            document.getElementById('modalTitle').innerText = canUserEdit() ? "Editar Tarjeta de Material" : "Detalles de Tarjeta (Modo Lectura)";
+            document.getElementById('matDescription').value = card.description || '';
+            document.getElementById('tagClient').value = card.tagClient || '';
+            document.getElementById('tagProcess').value = card.tagProcess || '';
+            document.getElementById('tagFinish').value = card.tagFinish || '';
+            document.getElementById('cardNotes').value = card.notes || '';
+            document.getElementById('dateSaw').value = card.dates?.saw || '';
+            document.getElementById('dateEntry').value = card.dates?.entry || '';
+            document.getElementById('dateResin').value = card.dates?.resin || '';
+            document.getElementById('datePolish').value = card.dates?.polish || '';
+            document.getElementById('dateCut').value = card.dates?.cut || '';
+            document.getElementById('dateLoad').value = card.dates?.load || '';
+            tempCardImage = card.image || '';
+            
+            if (tempCardImage) {
+                document.getElementById('imgPreviewName').innerText = '📷 Foto actual guardada';
+                document.getElementById('btnRemoveCardImage').style.display = canUserEdit() ? 'inline-block' : 'none';
+            } else {
+                document.getElementById('imgPreviewName').innerText = '';
+                document.getElementById('btnRemoveCardImage').style.display = 'none';
+            }
+
+            const activityListEl = document.getElementById('trelloActivityList');
+            if (card.activity && card.activity.length > 0) {
+                activityListEl.innerHTML = card.activity.map(act => `<div class="activity-item">• ${act}</div>`).join('');
+            } else {
+                activityListEl.innerHTML = `<div class="activity-item" style="color:#64748b;">No hay actividad registrada todavía.</div>`;
+            }
+            document.getElementById('trelloActivitySection').style.display = 'block';
+            document.getElementById('newCommentInput').value = '';
+
+            document.getElementById('btnDeleteCard').style.display = canUserEdit() ? 'block' : 'none';
+            document.getElementById('btnSaveCard').style.display = canUserEdit() ? 'inline-block' : 'none';
+            document.getElementById('cardModal').classList.add('active');
+        }
+
+        document.getElementById('btnCloseModal').addEventListener('click', () => document.getElementById('cardModal').classList.remove('active'));
+        document.getElementById('closeModal').addEventListener('click', () => document.getElementById('cardModal').classList.remove('active'));
+
+        document.getElementById('btnSaveCard').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos para guardar cambios."); return; }
+            const description = document.getElementById('matDescription').value;
+            const tagClient = document.getElementById('tagClient').value;
+            const tagProcess = document.getElementById('tagProcess').value;
+            const tagFinish = document.getElementById('tagFinish').value;
+            const notes = document.getElementById('cardNotes').value;
+            const commentText = document.getElementById('newCommentInput').value.trim();
+            
+            const dates = {
+                saw: document.getElementById('dateSaw').value,
+                entry: document.getElementById('dateEntry').value,
+                resin: document.getElementById('dateResin').value,
+                polish: document.getElementById('datePolish').value,
+                cut: document.getElementById('dateCut').value,
+                load: document.getElementById('dateLoad').value
+            };
+
+            const col = appData.columns.find(c => c.id === currentTargetColId);
+
+            if (currentEditingCardId) {
+                const card = col.cards.find(ca => ca.id === currentEditingCardId);
+                card.description = description;
+                card.tagClient = tagClient;
+                card.tagProcess = tagProcess;
+                card.tagFinish = tagFinish;
+                card.notes = notes;
+                card.dates = dates;
+                card.image = tempCardImage;
+                
+                if (!card.activity) card.activity = [];
+                card.activity.push(`${currentUsername} editó los datos de la tarjeta el ${formatTimestamp()}`);
+
+                if (commentText) {
+                    card.activity.push(`💬 <strong>${currentUsername}:</strong> "${commentText}" (${formatTimestamp()})`);
+                }
+            } else {
+                let newCard = {
+                    id: 'card_' + Date.now(),
+                    description, tagClient, tagProcess, tagFinish, 
+                    notes, 
+                    dates, image: tempCardImage,
+                    activity: [`${currentUsername} ha añadido esta tarjeta a ${col.title} el ${formatTimestamp()}`]
+                };
+                if (commentText) {
+                    newCard.activity.push(`💬 <strong>${currentUsername}:</strong> "${commentText}" (${formatTimestamp()})`);
+                }
+                col.cards.push(newCard);
+            }
+
+            document.getElementById('cardModal').classList.remove('active');
+            saveToCloud();
+        });
+
+        document.getElementById('btnDeleteCard').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            if (confirm("¿Borrar tarjeta?")) {
+                const col = appData.columns.find(c => c.id === currentTargetColId);
+                col.cards = col.cards.filter(ca => ca.id !== currentEditingCardId);
+                document.getElementById('cardModal').classList.remove('active');
+                saveToCloud();
+            }
+        });
+
+        window.openAddBreakdownModal = function(colId) {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            currentTargetColId = colId;
+            currentEditingCardId = null;
+            tempBreakdownImage = '';
+            document.getElementById('breakdownModalTitle').innerText = "Nueva Avería / Incidencia";
+            document.getElementById('breakdownMachine').value = '';
+            document.getElementById('breakdownType').value = '';
+            document.getElementById('breakdownDate').value = '';
+            document.getElementById('breakdownRepairDate').value = '';
+            document.getElementById('breakdownCompany').value = '';
+            document.getElementById('breakdownWorkers').value = '';
+            document.getElementById('breakdownImgPreviewName').innerText = '';
+            document.getElementById('btnRemoveBreakdownImage').style.display = 'none';
+            document.getElementById('btnDeleteBreakdown').style.display = 'none';
+            document.getElementById('breakdownModal').classList.add('active');
+        }
+
+        window.openEditBreakdownModal = function(colId, cardId) {
+            currentTargetColId = colId;
+            currentEditingCardId = cardId;
+            const col = appData.columns.find(c => c.id === colId);
+            const card = col.cards.find(ca => ca.id === cardId);
+
+            document.getElementById('breakdownModalTitle').innerText = canUserEdit() ? "Editar Avería / Incidencia" : "Ver Avería (Modo Lectura)";
+            document.getElementById('breakdownMachine').value = card.machine || '';
+            document.getElementById('breakdownType').value = card.breakdownType || '';
+            document.getElementById('breakdownDate').value = card.breakdownDate || '';
+            document.getElementById('breakdownRepairDate').value = card.breakdownRepairDate || '';
+            document.getElementById('breakdownCompany').value = card.breakdownCompany || '';
+            document.getElementById('breakdownWorkers').value = card.breakdownWorkers || '';
+            tempBreakdownImage = card.image || '';
+
+            if (tempBreakdownImage) {
+                document.getElementById('breakdownImgPreviewName').innerText = '📷 Foto actual guardada';
+                document.getElementById('btnRemoveBreakdownImage').style.display = canUserEdit() ? 'inline-block' : 'none';
+            } else {
+                document.getElementById('breakdownImgPreviewName').innerText = '';
+                document.getElementById('btnRemoveBreakdownImage').style.display = 'none';
+            }
+
+            document.getElementById('btnDeleteBreakdown').style.display = canUserEdit() ? 'block' : 'none';
+            document.getElementById('btnSaveBreakdown').style.display = canUserEdit() ? 'inline-block' : 'none';
+            document.getElementById('breakdownModal').classList.add('active');
+        }
+
+        document.getElementById('btnCloseBreakdownModal').addEventListener('click', () => document.getElementById('breakdownModal').classList.remove('active'));
+        document.getElementById('closeBreakdownModal').addEventListener('click', () => document.getElementById('breakdownModal').classList.remove('active'));
+
+        document.getElementById('btnSaveBreakdown').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            const machine = document.getElementById('breakdownMachine').value;
+            const breakdownType = document.getElementById('breakdownType').value;
+            const breakdownDate = document.getElementById('breakdownDate').value;
+            const breakdownRepairDate = document.getElementById('breakdownRepairDate').value;
+            const breakdownCompany = document.getElementById('breakdownCompany').value;
+            const breakdownWorkers = document.getElementById('breakdownWorkers').value;
+
+            if (!machine) {
+                alert("Por favor, selecciona una máquina o elemento.");
+                return;
+            }
+
+            const col = appData.columns.find(c => c.id === currentTargetColId);
+
+            if (currentEditingCardId) {
+                const card = col.cards.find(ca => ca.id === currentEditingCardId);
+                card.machine = machine;
+                card.breakdownType = breakdownType;
+                card.breakdownDate = breakdownDate;
+                card.breakdownRepairDate = breakdownRepairDate;
+                card.breakdownCompany = breakdownCompany;
+                card.breakdownWorkers = breakdownWorkers;
+                card.image = tempBreakdownImage;
+            } else {
+                col.cards.push({
+                    id: 'breakdown_' + Date.now(),
+                    machine,
+                    breakdownType,
+                    breakdownDate,
+                    breakdownRepairDate,
+                    breakdownCompany,
+                    breakdownWorkers,
+                    image: tempBreakdownImage
+                });
+            }
+
+            document.getElementById('breakdownModal').classList.remove('active');
+            saveToCloud();
+        });
+
+        document.getElementById('btnDeleteBreakdown').addEventListener('click', () => {
+            if (!canUserEdit()) { alert("No tienes permisos."); return; }
+            if (confirm("¿Borrar registro de avería?")) {
+                const col = appData.columns.find(c => c.id === currentTargetColId);
+                col.cards = col.cards.filter(ca => ca.id !== currentEditingCardId);
+                document.getElementById('breakdownModal').classList.remove('active');
+                saveToCloud();
+            }
+        });
+    </script>
+</body>
+</html>
